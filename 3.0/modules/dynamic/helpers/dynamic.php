@@ -17,7 +17,8 @@
  * Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA  02110-1301, USA.
  */
 class dynamic_Core {
-  static function get_context($item, $data) {
+  static function get_context($item, $context) {
+    $data = $context->data();
     $dynamic_type_definition = $data["dynamic_type"];
 
     $position = self::_get_position($dynamic_type_definition, $item);
@@ -26,13 +27,16 @@ class dynamic_Core {
     } else {
       $previous_item = null;
       list ($next_item) = self::items($dynamic_type_definition->key_field, 1, $position);
-   }
+    }
 
+    $albumPath = $data["path"];
     return array("position" =>$position,
                  "previous_item" => $previous_item,
                  "next_item" =>$next_item,
                  "sibling_count" => self::get_display_count($dynamic_type_definition),
-                 "parents" => null); // TODO create a pseudo object to represent a breadcrumb
+                 "parents" => array(item::root(),
+                                    $context->dynamic_item($dynamic_type_definition->title,
+                                                           "dynamic/$albumPath?show={$item->id}")));
   }
 
   static function get_display_count($dynamic_type_definition) {

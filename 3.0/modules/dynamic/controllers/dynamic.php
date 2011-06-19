@@ -43,7 +43,7 @@ class Dynamic_Controller extends Controller {
 
     Photo_Display_Context::factory()
       ->set_context_callback("dynamic::get_context")
-      ->set_context_data(array("dynamic_type" => $album_defn))
+      ->set_data(array("dynamic_type" => $album_defn, "path" => $album))
       ->save();
 
     $template = new Theme_View("page.html", "collection", "dynamic");
