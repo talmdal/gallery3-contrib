@@ -21,7 +21,7 @@ class dynamic_Core {
     $data = $context->data();
     $dynamic_type_definition = $data["dynamic_type"];
 
-    $position = self::_get_position($dynamic_type_definition, $item);
+    $position = self::get_position($dynamic_type_definition, $item);
     if ($position > 1) {
       list ($previous_item, $ignore, $next_item) = self::items($dynamic_type_definition->key_field, 3, $position - 2);
     } else {
@@ -67,7 +67,7 @@ class dynamic_Core {
    * @param Item_Model $item
    * @param array      $where an array of arrays, each compatible with ORM::where()
    */
-  private static function _get_position($dynamic_type_definition, $item) {
+  static function get_position($dynamic_type_definition, $item) {
 
     $sort_column = $dynamic_type_definition->key_field;
     $display_limit = self::get_display_count($dynamic_type_definition);
