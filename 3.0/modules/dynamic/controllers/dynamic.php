@@ -38,8 +38,7 @@ class Dynamic_Controller extends Controller {
       $index = dynamic::get_position($album_defn, $child);
       if ($index) {
         $page = ceil($index / $page_size);
-      } else {
-        $page = 1;
+        url::redirect("dynamic/$album" . ($page == 1 ? "" : "?page=$page"));
       }
     } else {
       $page = (int) $input->get("page", "1");
