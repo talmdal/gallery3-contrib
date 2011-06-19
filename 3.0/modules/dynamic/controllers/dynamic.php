@@ -30,14 +30,8 @@ class Dynamic_Controller extends Controller {
     $page = Input::instance()->get("page", "1");
 
     $album_defn = unserialize(module::get_var("dynamic", $album));
-    $display_limit = $album_defn->limit;
-    $children_count = ORM::factory("item")
-      ->viewable()
-      ->where("type", "!=", "album")
-      ->count_all();
-    if (!empty($display_limit)) {
-      $children_count = min($children_count, $display_limit);
-    }
+
+    $children_count = dynamic::get_display_count($album_defn);
 
     $offset = ($page - 1) * $page_size;
     $max_pages = max(ceil($children_count / $page_size), 1);
@@ -47,15 +41,16 @@ class Dynamic_Controller extends Controller {
       throw new Kohana_404_Exception();
     }
 
+    Photo_Display_Context::factory()
+      ->set_context_callback("dynamic::get_context")
+      ->set_context_data(array("dynamic_type" => $album_defn))
+      ->save();
+
     $template = new Theme_View("page.html", "collection", "dynamic");
     $template->set_global("page", $page);
     $template->set_global("page_size", $page_size);
     $template->set_global("max_pages", $max_pages);
-    $template->set_global("children", ORM::factory("item")
-                          ->viewable()
-                          ->where("type", "!=", "album")
-                          ->order_by($album_defn->key_field, "DESC")
-                          ->find_all($page_size, $offset));
+    $template->set_global("children", dynamic::items($album_defn->key_field, $page_size, $offset));
     $template->set_global("children_count", $children_count);
     $template->content = new View("dynamic.html");
     $template->content->title = t($album_defn->title);
