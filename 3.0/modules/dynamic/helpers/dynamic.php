@@ -17,6 +17,28 @@
  * Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA  02110-1301, USA.
  */
 class dynamic_Core {
+  static function get_context($item, $context) {
+    $data = $context->data();
+    $dynamic_type_definition = $data["dynamic_type"];
+
+    $position = self::get_position($dynamic_type_definition, $item);
+    if ($position > 1) {
+      list ($previous_item, $ignore, $next_item) = self::items($dynamic_type_definition->key_field, 3, $position - 2);
+    } else {
+      $previous_item = null;
+      list ($next_item) = self::items($dynamic_type_definition->key_field, 1, $position);
+    }
+
+    $albumPath = $data["path"];
+    return array("position" =>$position,
+                 "previous_item" => $previous_item,
+                 "next_item" =>$next_item,
+                 "sibling_count" => self::get_display_count($dynamic_type_definition),
+                 "parents" => array(item::root(),
+                                    $context->dynamic_item($dynamic_type_definition->title,
+                                                           "dynamic/$albumPath?show={$item->id}")));
+  }
+
   static function get_display_count($dynamic_type_definition) {
     $display_limit = $dynamic_type_definition->limit;
     $children_count = ORM::factory("item")
