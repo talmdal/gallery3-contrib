@@ -1,6 +1,6 @@
 <?php defined("SYSPATH") or die("No direct script access.");/**
  * Gallery - a web based photo album viewer and editor
- * Copyright (C) 2000-2011 Bharat Mediratta
+ * Copyright (C) 2000-2013 Bharat Mediratta
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,17 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
     * 
     * @author brentil <forums@inner-ninja.com>
     */
+
+    protected $gm_ini;
+    protected $gm_core_ini;
+
+    public function __construct() {
+        parent::__construct();
+
+        $this->gm_ini = TMPPATH.'/gm.ini';
+        $this->gm_core_ini = TMPPATH.'/gm_core.ini';
+    }
+
 	public function index() {
   
 		$view = new Admin_View("admin.html");
@@ -61,7 +72,7 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
       $cache_updates = array("date" => "", "updates" => 0);
       $refreshCache = true;
     }
-    
+     
     //Check the ability to access the Gallery3 GitHub
     $GitHub = null;
     try {
@@ -90,6 +101,29 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
     $update_count = 0;
     
     if($refreshCache == true){
+		// Only poll GalleryModules.com once for the ini file.
+		$fp = fopen($this->gm_ini, 'w');
+		$fp2 = fopen($this->gm_core_ini,'w');
+		if(function_exists("curl_init")) {
+			$cp = curl_init("http://www.gallerymodules.com/gallerymodules.ini");
+			curl_setopt($cp, CURLOPT_FILE, $fp);
+			$buffer = curl_exec($cp);
+			curl_close($cp);
+			fclose($fp);
+			
+			$cp = curl_init("http://www.gallerymodules.com/core.ini");
+			curl_setopt($cp, CURLOPT_FILE, $fp2);
+			$buffer = curl_exec($cp);
+			curl_close($cp);
+			fclose($fp2);
+		} else {
+			fwrite($fp,file_get_contents("http://www.gallerymodules.com/gallerymodules.ini"));
+		    	fclose($fp);
+
+			fwrite($fp2,file_get_contents("http://www.gallerymodules.com/core.ini"));
+		    	fclose($fp2);
+		}		
+		
       foreach (module::available() as $this_module_name => $module_info) {
 
         $font_color_local = "black";
@@ -111,10 +145,17 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
         $font_color_local = $this->get_local_module_version_color ($module_info->version, $module_info->code_version);
         list ($core_version, $core_server) = $this->get_remote_module_version($this_module_name, "CORE");
         $font_color_core = $this->get_module_version_color ($module_info->version, $module_info->code_version, $core_version);
+<<<<<<< HEAD
         list ($contrib_version, $contrib_server) = $this->get_remote_module_version($this_module_name, "CONTRIB");
         $font_color_contrib = $this->get_module_version_color ($module_info->version, $module_info->code_version, $contrib_version);
         list ($gh_version, $gh_server) = $this->get_remote_module_version($this_module_name, "GH");
         $font_color_gh = $this->get_module_version_color ($module_info->version, $module_info->code_version, $gh_version);
+=======
+        if(!is_numeric($core_version)) {
+          list ($gh_version, $gh_server) = $this->get_remote_module_version($this_module_name, "GH");
+          $font_color_gh = $this->get_module_version_color ($module_info->version, $module_info->code_version, $gh_version);
+        }
+>>>>>>> upstream
         
         if($font_color_core == "red" or $font_color_contrib == "red" or $font_color_gh == "red"){
           $update_count++;
@@ -127,14 +168,7 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
             $core_dlink = "http://github.com/gallery/gallery3/tree/master/modules/".$this_module_name;
           }
         }
-        
-        if (is_numeric($contrib_version)) {
-          if($contrib_version > $module_info->version) {
-            $contrib_dlink = "http://github.com/gallery/gallery3-contrib/tree/master/". 
-            substr_replace(gallery::VERSION,"",strpos(gallery::VERSION," ")) ."/modules/".$this_module_name;
-          }
-        }
-        
+      
         if (is_numeric($gh_version)) {
           if($gh_version > $module_info->version) {
             $this_gm_repo = str_replace(".","",substr_replace(gallery::VERSION,"",strpos(gallery::VERSION," ")));
@@ -166,6 +200,11 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
       Cache::instance()->set("moduleupdates_cache_updates", serialize($cache_updates), array("ModuleUpdates"), null);
       log::success("moduleupdates", t("Completed checking remote GitHub for modules updates."));
 		}
+		
+    if(is_file($this->gm_ini))
+      unlink($this->gm_ini); 
+    if(is_file($this->gm_core_ini))
+      unlink($this->gm_core_ini);		
     
 		$view->content->vars = $cache;
     $view->content->update_time = $cache_updates['date'];
@@ -224,7 +263,6 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
     return $font_color;
   }
   
-  
   /**
     * Parses the known GitHub repositories for new versions of modules.
     *
@@ -233,7 +271,6 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
     * gather the version information.  Uses the following locations;
     *
     * http://github.com/gallery/gallery3
-    * http://github.com/gallery/gallery3-contrib
     * http://www.gallerymodules.com
     * 
     * @author brentil <forums@inner-ninja.com>
@@ -248,6 +285,7 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
 		$file = null;
 		
     switch ($server_location) {
+<<<<<<< HEAD
       case "CONTRIB":
           //Check the Gallery3 Community Contributions GitHub
           if ($file == null) {
@@ -262,37 +300,40 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
             }
           }
           break;
+=======
+>>>>>>> upstream
       case "CORE":
           //Check the main Gallery3 GitHub
           if ($file == null) {
             try {
-              $file = fopen ("http://github.com/gallery/gallery3/raw/master/modules/".$module_name."/module.info", "r");
+              if(file_exists($this->gm_core_ini)) {
+                $file = 1;
+              }	
               if ($file != null) {
+                $gm_core_array = parse_ini_file($this->gm_core_ini,true);
                 $server = '(G)';
               }
             }
-            catch (Exception $e) {
+              catch (Exception $e) {
             }
           }
           break;
       case "GH":
-          //Check GalleryModules.com
-          if ($file == null) {
+          //Parse ini file from GalleryModules.com
             try {
-              $this_gm_repo = str_replace(".","",substr_replace(gallery::VERSION,"",strpos(gallery::VERSION," ")));
-              if($this_gm_repo == "30"){
-                $file = fopen ("http://www.gallerymodules.com/m/".$module_name, "r");
-              } else {
-                $file = fopen ("http://www.gallerymodules.com/".$this_gm_repo."m/".$module_name, "r");
-              }
+              if(file_exists($this->gm_ini)) {
+                $file = 1;
+              }	
               if ($file != null) {
+                $gm_array = parse_ini_file($this->gm_ini,true);
                 $server = '(GH)';
               }
             }
             catch (Exception $e) {
+            	echo $e;
             }
-          }
           break;
+<<<<<<< HEAD
     }
     
     if ($file != null) {
@@ -310,11 +351,40 @@ class Admin_Moduleupdates_Controller extends Admin_Controller {
           if (preg_match ("@version = (.*)@i", $line, $out)) {
             $version = $out[1];
             break;
+=======
+    } 
+
+	if ($file != null) {
+    //Search in the GM listing
+		if ($server_location == "GH"){
+			//Search if this is a Gallery 3.0 module
+      if(array_key_exists($module_name,$gm_array)){
+        if(array_key_exists('g3',$gm_array[$module_name])){
+          $version = $gm_array[$module_name]['g3'];
+        }
+        if($version == ''){
+          if(array_key_exists('g31',$gm_array[$module_name])){
+            $version = $gm_array[$module_name]['g31'];
           }
         }
-			}
-			fclose ($file);
+        if($version == ''){
+          if(array_key_exists('codex',$gm_array[$module_name])){
+            $version = $gm_array[$module_name]['codex'];
+>>>>>>> upstream
+          }
+        }
+      } else { //Module not found
+          $version = '';
+      }
+    //Search in the Core listing
+		} else {
+      if(array_key_exists($module_name,$gm_core_array)){
+        $version = $gm_core_array[$module_name]['version'];
+      } else { //Module not found
+        $version = '';
+      }
 		}
+	}
     
       return array ($version, $server);
   }

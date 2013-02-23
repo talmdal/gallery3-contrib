@@ -1,7 +1,7 @@
 <?php defined("SYSPATH") or die("No direct script access.");
 /**
  * Gallery - a web based photo album viewer and editor
- * Copyright (C) 2000-2011 Bharat Mediratta
+ * Copyright (C) 2000-2013 Bharat Mediratta
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,4 +25,9 @@ class register_theme_Core {
       return new View("register_welcome_message_loader.html");
     }
   }
+  // added Shad Laws, v2
+  static function head($theme) {
+    return $theme->css("register.css");
+  }
+
 }

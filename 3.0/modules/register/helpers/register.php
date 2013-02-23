@@ -1,7 +1,7 @@
 <?php defined("SYSPATH") or die("No direct script access.");
 /**
  * Gallery - a web based photo album viewer and editor
- * Copyright (C) 2000-2011 Bharat Mediratta
+ * Copyright (C) 2000-2013 Bharat Mediratta
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,14 +47,35 @@ class register_Core {
     $message->user = $user;
     $message->site_url = $requires_first ? url::abs_site("register/first/{$user->hash}") :
                                            url::abs_site("");
-    self::_sendemail($user->email, t("Your userid has been created"), $message);
+    // added Shad Laws, v2
+    $message->subject_prefix = module::get_var("registration", "subject_prefix");
+    $message->locale = $user->locale; // as stored in pending_users table
+    $message->subject = t("Welcome", array("locale" => $message->locale));
+    // modified Shad Laws, v2
+    self::_sendemail($user->email, $message->subject_prefix.$message->subject, $message);
   }
 
   static function send_confirmation($user) {
     $message = new View("confirm_registration.html");
     $message->confirm_url = url::abs_site("register/confirm/{$user->hash}");
     $message->user = $user;
-    self::_sendemail($user->email, t("User registration confirmation"), $message);
+    // added Shad Laws, v2
+    $message->subject_prefix = module::get_var("registration", "subject_prefix");
+    $message->locale = $user->locale; // as stored in pending_users table
+    $message->subject = t("User registration confirmation", array("locale" => $message->locale));
+    // modified Shad Laws, v2
+    self::_sendemail($user->email, $message->subject_prefix.$message->subject, $message);
+  }
+
+  // function added Shad Laws, v2
+  static function send_admin_notify($user) {
+    $message = new View("register_admin_notify.html");
+    $message->admin_register_url = url::abs_site("admin/register");
+    $message->user = $user;
+    $message->subject_prefix = module::get_var("registration", "subject_prefix");
+    $message->locale = module::get_var("gallery", "default_locale"); // as Gallery default
+    $message->subject = t("New pending user registration", array("locale" => $message->locale));
+    self::_sendemail(module::get_var("gallery", "email_reply_to"), $message->subject_prefix.$message->subject, $message);
   }
 
   static function create_pending_request($form) {
@@ -66,6 +87,8 @@ class register_Core {
     $user->email = $form->register_user->inputs["email"]->value;
     $user->url = $form->register_user->inputs["url"]->value;
     $user->request_date = time();
+    // added by Shad Laws, v2
+    $user->locale = locales::locale_from_http_request() ? locales::locale_from_http_request() : module::get_var("gallery", "default_locale"); // sets default locale based on browser
 
     if (!$email_verification) {
       $user->state = 1;
@@ -85,6 +108,15 @@ class register_Core {
     $new_user->guest = false;
     $new_user->save();
 
+    $group_id = module::get_var("registration", "default_group");
+    if ($group_id != null) {
+        $default_group = group::lookup($group_id);
+        if ($default_group != null) {
+            $default_group->add($new_user);
+            $default_group->save();
+        }
+    }
+
     $user->hash =  md5(uniqid(mt_rand(), true));
     $user->state = 2;
     $user->save();
@@ -98,7 +130,8 @@ class register_Core {
       ->to($email)
       ->subject($subject)
       ->header("Mime-Version", "1.0")
-      ->header("Content-type", "text/html; charset=iso-8859-1")
+      // modified by Shad Laws, v2
+      ->header("Content-type", "text/html; charset=utf-8")
       ->message($message->render())
       ->send();
   }

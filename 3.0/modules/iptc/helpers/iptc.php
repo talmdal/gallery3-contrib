@@ -1,7 +1,7 @@
 <?php defined("SYSPATH") or die("No direct script access.");
 /**
  * Gallery - a web based photo album viewer and editor
- * Copyright (C) 2000-2009 Bharat Mediratta
+ * Copyright (C) 2000-2013 Bharat Mediratta
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,12 +34,12 @@ class iptc_Core {
       $info = getJpegHeader($item->file_path());
       if ($info !== FALSE) {
         $iptcBlock = getIptcBlock($info);
-		if ($iptcBlock !== FALSE) {
-		  $iptc = iptcparse($iptcBlock);
-		} else {
+	if ($iptcBlock !== FALSE) {
+	  $iptc = iptcparse($iptcBlock);
+	} else {
           $iptc = array();
         }
-        $xmp = getXmpDom($info);
+      	$xmp = getXmpDom($info);
         
         foreach (self::keys() as $keyword => $iptcvar) {
           $iptc_key = $iptcvar[0];
@@ -71,6 +71,19 @@ class iptc_Core {
     $record->key_count = count($keys);
     $record->dirty = 0;
     $record->save();
+
+    if ( array_key_exists('Keywords', $keys) ) {
+       $tags = explode(';', $keys['Keywords']);
+          foreach ($tags as $tag) {
+             try {
+                tag::add($item, $tag);
+              } catch (Exception $e) {
+         	Kohana_Log::add("error", "Error adding tag: $tag\n" 
+                              . $e->getMessage() . "\n" 
+                              . $e->getTraceAsString());
+            	}
+	  }
+    }
   }
 
   static function get($item) {

@@ -3,13 +3,13 @@
   <script type="text/javascript">
     $(document).ready(function() {
       $('form input[name^=tags]').ready(function() {
-          $('form input[name^=tags]').autocomplete(
+          $('form input[name^=tags]').gallery_autocomplete(
             "<?= url::site("/tags/autocomplete") ?>",
             {max: 30, multiple: true, multipleSeparator: ',', cacheLength: 1});
         });
       $('form input[name^=title]').change(function() {
         var title = $(this).val();
-        slug = slug.replace(/^\'/, "");
+        slug = title.replace(/^\'/, "");
         var slug = title.replace(/[^A-Za-z0-9-_]+/g, "-");
         slug = slug.replace(/^-/, "");
         slug = slug.replace(/-$/, "");
